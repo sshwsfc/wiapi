@@ -25,44 +25,7 @@ app_settings = {
     "autoescape": None,
     "record_ube": True,
     "apis": [],
-}
-try:
-    from my_settings import load_api_settings
-    load_api_settings(app_settings)
-except:
-    pass
-
-for api_module in app_settings['apis']:
-    __import__(api_module)
-    
-apiurls = api_manager.get_urls()
-
-#rest set
-resturls = []
-for uri in apiurls:
-    ruri = uri[0]
-    name =  uri[1].__module__
-    ruri = ruri.replace(":id","([\w\d]+)?")
-    resturls.append((ruri,uri[1],))
-apiurls = resturls
-
-#setup docs
-if app_settings.get('apidebug', False):
-    import doc
-
-    apiurls = apiurls + [
-            (r"/doc$", doc.ApiDocHandler),
-            (r"/doc/apps$", doc.ApiAppKeyHandler),
-            (r"/doc/example$", doc.ApiExampleHandler),
-            (r"/map$", doc.ApiMapHandler),
-    ]
-    app_settings.update({
-        "template_path": os.path.join(PROJECT_ROOT, "docs"),
-        "static_path": os.path.join(PROJECT_ROOT, "docs"),
-        "static_url_prefix": '%s/doc/static/' % app_settings.get('api_prefix', ''),
-        })
-
-handlers = [(app_settings.get('api_prefix', '') + u[0], u[1]) for u in apiurls]
+    }
 
 class MyApplication(tornado.web.Application):
 
@@ -70,17 +33,56 @@ class MyApplication(tornado.web.Application):
         if self.settings.get("record_ube", True):
             api_log_function(self, handler)
 
-application = MyApplication(handlers, **app_settings)
 define('port', type=int, default=80)
 
 def main():
+    try:
+        from my_settings import load_api_settings
+        load_api_settings(app_settings)
+    except:
+        pass
+
+    for api_module in app_settings['apis']:
+        __import__(api_module)
+        
+    apiurls = api_manager.get_urls()
+
+    #rest set
+    resturls = []
+    for uri in apiurls:
+        ruri = uri[0]
+        ruri = ruri.replace(":id","([\w\d]+)?")
+        resturls.append((ruri,uri[1],))
+    apiurls = resturls
+
+    #setup docs
+    if app_settings.get('apidebug', False):
+        import doc
+
+        apiurls = apiurls + [
+                (r"/doc$", doc.ApiDocHandler),
+                (r"/doc/apps$", doc.ApiAppKeyHandler),
+                (r"/doc/example$", doc.ApiExampleHandler),
+                (r"/map$", doc.ApiMapHandler),
+        ]
+        app_settings.update({
+            "template_path": os.path.join(PROJECT_ROOT, "docs"),
+            "static_path": os.path.join(PROJECT_ROOT, "docs"),
+            "static_url_prefix": '%s/doc/static/' % app_settings.get('api_prefix', ''),
+            })
+
+    handlers = [(app_settings.get('api_prefix', '') + u[0], u[1]) for u in apiurls]
+    application = MyApplication(handlers, **app_settings)
+
     parse_command_line()
+    
     http_server = tornado.httpserver.HTTPServer(application, no_keep_alive=True, xheaders=True)
     http_server.bind(options.port)
     if application.settings.get("debug"):
         http_server.start()
     else:
         http_server.start()
+    print 'Started wiapi server.'
     tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == "__main__":
