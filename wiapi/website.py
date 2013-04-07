@@ -74,6 +74,7 @@ application = MyApplication(handlers, **app_settings)
 define('port', type=int, default=80)
 
 def main():
+    parse_command_line()
     http_server = tornado.httpserver.HTTPServer(application, no_keep_alive=True, xheaders=True)
     http_server.bind(options.port)
     if application.settings.get("debug"):
@@ -83,6 +84,5 @@ def main():
     tornado.ioloop.IOLoop.instance().start()
 
 if __name__ == "__main__":
-    parse_command_line()
     main()
 
