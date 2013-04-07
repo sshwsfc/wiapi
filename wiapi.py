@@ -1,43 +1,22 @@
 # coding=utf-8
-
-import tornado.web
-import tornado.locale
-from tornado.web import HTTPError
-
-import hashlib, cgi
-#from utils import *
-#from meta import ApiMeta
-
-import re
-import os
-import tempfile
+import cgi
 import datetime
-import decimal
 import functools
+import json
 import logging
 from UserDict import UserDict
 
-#from django.db.models.query import QuerySet
-#from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+import tornado.locale
+import tornado.web
+from tornado.escape import utf8
+from tornado.web import HTTPError
 
-#from django.core.cache import cache
-#from django.core.files.uploadedfile import TemporaryUploadedFile, InMemoryUploadedFile
-from tornado.escape import utf8, _unicode
-import views
-
-class objid(str):
-    pass
-
-class dbid(str):
-    pass
-
-try:
-    import cjson as json
-
-    json.dumps = cjson.encode
-    json.loads = cjson.decode
-except Exception, e:
-    import json
+# try:
+#     import cjson
+#     json.dumps = cjson.encode
+#     json.loads = cjson.decode
+# except Exception:
+#     pass
 
 def truncate_zh(value, number=9):
     """
@@ -53,6 +32,33 @@ def truncate_zh(value, number=9):
     except:
         return value
 
+class BaseApiMeta(object):
+    
+    def __init__(self, handler):
+        self.request = handler.request
+        for k,v in self.meta_map.items():
+            setattr(self, k, handler.get_argument(v[1], self.request.headers.get(v[0], v[2])))
+
+    def record(self, infos):
+        for k, v in self.meta_map.items():
+            p = getattr(self, k)
+            if p:
+                key = len(v)>3 and v[3] or v[1]
+                infos[key] = p
+    
+    def params(self):
+        return dict([(k, getattr(self, k)) for k in self.meta_map.keys()])
+
+    def filte(self, qs):
+        return qs
+
+    @property
+    def meta_map(self):
+        return self.get_meta_map()
+
+    def get_meta_map(self):
+        #{ 'dpi': ('Wi-Dpi', 'dpi', '160'), }
+        return {}
 
 class ExampleParam(dict):
     def __init__(self, parent, name):
@@ -229,6 +235,7 @@ def ps_filter(api):
         [Param('start', False, int, 0, 0, 'Data Start'), Param('count', False, int, 25, 25, 'Data Count')])
 
 def app_required(method=None, cross_app=False):
+
     def appkey_filter(api):
         api['need_appkey'] = True
 
@@ -286,12 +293,15 @@ def auth_required(method):
     return wrapper
 
 
-class BaseHandler(views.BaseHandler):
+class BaseHandler(tornado.web.RequestHandler):
+
     def _(self, message, plural_message=None, count=None):
         if self.locale.code in self.settings.get('native_locale', []):
             return message
         return self.locale.translate(message.decode("utf-8").strip(), plural_message, count) or message
 
+    def mail_admins(self, subject, content):
+        pass
 
     def log_exception(self, type=None, value=None, tb=None):
         import traceback
@@ -309,7 +319,7 @@ class BaseHandler(views.BaseHandler):
                      (self._request_summary(), exce_info.getvalue(), self.request)
 
         logging.error(error_info, exc_info=exc_info)
-        mail_admins('API ERROR: %s' % str(value), "[%s] %s" % (datetime.datetime.now(), error_info), fail_silently=True)
+        self.mail_admins('API ERROR: %s' % str(value), "[%s] %s" % (datetime.datetime.now(), error_info))
 
 
     def _stack_context_handle_exception(self, type, value, tb):
@@ -317,24 +327,29 @@ class BaseHandler(views.BaseHandler):
         if _bundle:
             return
 
-        if isinstance(value, ObjectDoesNotExist):
-            self.send_error(400, exception=value)
-        elif isinstance(value, MultipleObjectsReturned):
-            self.send_error(400, exception=value)
-            self.send_error(400, exception=value)
-        elif isinstance(value, HTTPError):
+        if isinstance(value, HTTPError):
             self._handle_request_exception(value)
         else:
             self.log_exception(type, value, tb)
             self.send_error(500, exception=value)
+
         return True
-class MultipartPatchMix(object):
-    pass
-class ApiHandler(MultipartPatchMix, BaseHandler):
+
+class ApiHandler(BaseHandler):
+
+    # methods for extend by subclass
+    def get_user(self, id_or_name, username=False):
+        return None
+
+    def get_meta_cls(self):
+        return None
+
+    def record_ex(self, infos):
+        pass
+
     def initialize(self):
         self._bundle_buffer = {}
-        translation.activate(self.locale.code)
-        super(MultipartPatchMix, self).initialize()
+        #translation.activate(self.locale.code)
 
     def _(self, message, plural_message=None, count=None):
         if self.locale.code in self.settings.get('native_locale', []):
@@ -342,19 +357,11 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
         return self.locale.translatstatic_urle(message.decode("utf-8").strip(), plural_message, count)
 
     def record(self, infos):
-        if self.app:
-            infos['app_id'] = str(self.app.id)
         if self.user:
             infos['user_id'] = str(self.user.id)
-        self.api_meta.record(infos)
+        if self.api_meta:
+            self.api_meta.record(infos)
         self.record_ex(infos)
-
-    def record_ex(self, infos):
-        pass
-        # if self.user:
-        #     wibox_home = self.user.userinfo.wibox_home
-        #     if wibox_home:
-        #         infos['ex_ab'] = wibox_home
 
     def get_browser_locale(self, default="en_US"):
         """Determines the user's locale from Accept-Language header.
@@ -383,7 +390,6 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
     def auth_login(self, user):
         self.user_key = self.create_signed_value("user_id", str(user.id))
         self.set_cookie("user_id", self.user_key, expires_days=3650)
-        #self.set_cookie("uid", str(user.id), expires_days=100)
         if user.is_guest:
             self.set_cookie("guest", 'true', expires_days=1)
         user.last_login = datetime.datetime.now()
@@ -416,7 +422,7 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
     def static_media_url(self, url):
         return self.settings.get('static_url', '') + (url[0] == '/' and url[1:] or url)
 
-    def file_url(self, f, tag='phone', screen_hr=False,rotate=-90):
+    def file_url(self, f, tag='phone', screen_hr=False):
         if f is None:
             return ''
 
@@ -433,19 +439,11 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
         try:
             try:
                 dpi = int(self.api_meta.highdpi)
-            except Exception, e:
+            except Exception:
                 dpi = 1
             if dpi > 1:
                 tag = '%dx%s' % (dpi, tag)
 
-            key = '%s:%s:%s' % ('img', f.url, tag)
-            url = cache.get(key)
-            if url is not None:
-                return url
-
-#            if screen_hr:
-#                setattr(f,"rotate",rotate)
-            
             if hasattr(f, 'extra_thumbnails') and f.extra_thumbnails.has_key(tag):
                     f = f.extra_thumbnails[tag]
             if hasattr(f, 'url'):
@@ -453,9 +451,8 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
             else:
                 url = self.static_media_url(unicode(f))
                 
-            cache.set(key, url, 100 * 60)
             return url
-        except Exception, e:
+        except Exception:
             return ''
 
     def blob_url(self, obj, field='blob'):
@@ -466,25 +463,10 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
             )
         return blob_url
 
-
     @property
     def current_site(self):
         return self.settings.get('api_base').replace('https', 'http')
 
-    def prepare(self):
-        if self.user:
-            ping_user_online(self.user)
-
-
-    def is_mobile(self, mobile):
-        mobile_start = ['130', '131', '132', '133', '134', '135', '136', '137', '138', '139', '147', '150', '151',\
-                        '152', '153', '155', '156', '157', '158', '159', '186', '187', '188']
-
-        for m in mobile_start:
-            if mobile.startswith(m):
-                return True
-
-        return False
     def get_cookie(self, name, default=None):
         if name == 'user_id' and self.has_arg('session_key'):
             return self.arg('session_key')
@@ -504,44 +486,31 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
 
     def get_current_user(self):
         try:
-        # debug
             if self.settings.get("debug", False) or self.settings.get("apidebug", False):
-                test_username = self.request.headers.get('Test_user', self.request.headers.get('HTTP_TEST_USER',
-                                                                                               self.get_argument(
-                                                                                                   '_test_user', None)))
+                test_username = self.request.headers.get('Test_user', \
+                    self.request.headers.get('HTTP_TEST_USER', self.get_argument('_test_user', None)))
 
                 if test_username:
-                    return User.get(test_username, username=True)
+                    return self.get_user(test_username, username=True)
                 elif self.settings.get("fake_user", False):
-                    return User.get(self.settings.get("fake_user"), username=True)
+                    return self.get_user(self.settings.get("fake_user"), username=True)
             user_id = self.get_secure_cookie("user_id")
             if user_id:
-                #return User.objects.get(id=user_id)
-                user = User.get(user_id)
-                return user
+                return self.get_user(user_id)
             else:
                 return None
-
-        except Exception, e:
+        except Exception:
             return None
-
-    @property
-    def app(self):
-        pass
-
-
-    def get_current_app(self):
-        pass
 
     @property
     def api_meta(self):
         if not hasattr(self, "_api_meta"):
-            self._api_meta = ApiMeta(self)
+            meta_cls = self.get_meta_cls()
+            if meta_cls:
+                self._api_meta = meta_cls(self)
+            else:
+                self._api_meta = None
         return self._api_meta
-
-    @property
-    def pcode(self):
-        return str(platform_id(self.api_meta.platform_code))
 
     def send_error(self, status_code=403, **kwargs):
         _bundle = getattr(self, "_bundle", None)
@@ -562,9 +531,6 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
             if kwargs.has_key('exception') and not kwargs.has_key('msg'):
                 kwargs['msg'] = str(kwargs['exception'])
                 del kwargs['exception']
-            # if self.api_meta.sdk_version >= '3.0' or not kwargs.has_key('msg'):
-                # self.write(kwargs)
-            # else:
             self.write(kwargs)
 
         if not self._finished and not _bundle:
@@ -578,18 +544,15 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
             return
 
         assert not self._finished
-        if type(chunk) in (QuerySet,):
-            chunk = self.ps(chunk)
 
         if self.arg_bool('windowname'):
             html = '<html><script type="text/javascript">window.name=\'%s\';</script></html>'
             if type(chunk) in (dict, list):
-                chunk = simplejson.dumps(chunk, cls=ApiJSONEncoder, ensure_ascii=False)
+                chunk = self.json_dumps(chunk)
             self._write_buffer.append(html % utf8(chunk.replace("'", "\\'").replace('\r\n', ' ')))
         else:
             if type(chunk) in (dict, list):
-                chunk = simplejson.dumps(chunk, cls=ApiJSONEncoder, ensure_ascii=False,
-                                         indent=self.arg_bool('json_indent') and 4 or None)
+                chunk = self.json_dumps(chunk)
                 if self.arg('cb', False):
                     chunk = '%s(%s)' % (self.arg('cb'), chunk)
                 self.set_header("Content-Type", "application/json; charset=UTF-8")
@@ -598,6 +561,9 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
             else:
                 super(ApiHandler, self).write(chunk)
 
+    def json_dumps(self, chunk):
+        return json.dumps(chunk, ensure_ascii=False, \
+            indent=self.arg_bool('json_indent') and 4 or None)
 
     def get_page(self):
         start = int(self.get_argument('start', 0))
@@ -614,13 +580,9 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
         if(start < 0 or count > 100 or count < 0):
             raise Exception(u"分页参数错误")
 
-        if (type(qs) in (list, set)):
-            total_count = len(qs)
-        else:
+        if hasattr(self.api_meta, 'filte'):
             qs = self.api_meta.filte(qs)
-            total_count = qs.count()
-            if type(qs) not in (QuerySet,):
-                qs = qs.all()
+        total_count = len(qs)
 
         if total_count > 0:
             if start == -1:
@@ -632,18 +594,6 @@ class ApiHandler(MultipartPatchMix, BaseHandler):
         else:
             items = []
         return {'total_count': total_count, 'items': items}
-
-    def get_uploadfile(self, name):
-        if self.request.files.has_key(name):
-            file_obj = self.request.files[name][0]
-            body = file_obj['body']
-            f = TemporaryUploadedFile(file_obj['filename'], file_obj['content_type'], 0, None)
-            f.write(body)
-            f.seek(0)
-            f.size = len(body)
-            return f
-        else:
-            return None
 
     def static_url(self, path):
         return self.settings.get('static_url_prefix', '/static/') + path

@@ -1,7 +1,5 @@
-import tornado.web
 from django.utils import simplejson
 from wiapi import *
-from wiapi.testing import TestDatas
 
 class ApiDocHandler(BaseHandler):
     def get(self):
@@ -47,7 +45,7 @@ class ApiExampleHandler(ApiHandler):
         try:
             for p in parts:
                 data = (type(data) is dict) and data[p] or getattr(data, p)
-        except Exception, e:
+        except Exception:
             data = ''
         if hasattr(data, 'val'):
             v = data.val()
