@@ -1,0 +1,552 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<title>Wiapi Docs</title>
+       <meta name="ROBOTS" content="ALL" />
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Cache-Control" content="no-cache">
+	<style>
+	body {
+		background: white;
+		color: black;
+		padding: 40px;
+		margin: 0;
+		font-family: Gotham, Helvetica, Arial, sans-serif;
+		line-height: 1;
+	}
+	h1 {
+		font-weight: bold;
+		text-transform: uppercase;
+		font-size: 20px;
+		margin: 0 0 5px 0;
+	}
+	h2 {
+		font-family: "Lucida Grande", Verdana, sans-serif;
+		font-size: 10px;
+		color: #777777;
+		margin: 0 0 20px 0;
+	}
+	h1 a{
+		color: #333;
+	}
+	h2 b{
+		color: #279919;
+	}
+	h3{
+		font-size: 18px;
+		margin: 10px 0px;
+		border-top: 1px solid #CCC;
+		padding-top: 10px;
+		color: #666;
+	}
+	a{
+		text-decoration: none !important;
+		color: #666;
+		cursor: pointer;
+	}
+
+	h3 a{
+		cursor: pointer;
+	}
+
+	h3 em{
+		color: #CCC;
+		font-size: 9px;
+	}
+	h3 a.exp, h3 a.elink{
+		float: right;
+		margin-right: 10px;
+		font-size: 20px;
+		font-weight: bold;
+		padding: 0px 10px;
+	}
+	h3 a.exp:hover, h3 a.elink:hover {
+		background: #666;
+		color: #FFF;
+	}
+	h3 .hapi{
+		margin-left: 20px;
+	}
+	div.content {
+		margin-left: 10px;
+	}
+	.hidden {
+		display: none;
+	}
+	.clear {
+		clear: both;
+	}
+	.api .api_method{
+		font-weight: bold;
+		color: #804000;
+	}
+	.api .api_uri{
+		color: #008040;
+	}
+	.hapi .api_method{
+		color: #804000;
+		font-size: 11px;
+	}
+	.hapi .api_uri{
+		color: #008040;
+		font-size: 11px;
+	}
+	.module {
+		margin: 20px 0px;
+		list-style: none;
+		color: #6d8fb0;
+	}
+	.module a{
+		color: #6d8fb0;
+	}
+	.module.highlight {
+		background: #ffffa5;
+	}
+	#modules {
+		float: right;
+		border: 1px solid #abdded;
+		background: #f3f7fb;
+		padding: 0px;
+		position: fixed;
+		right: 20px;
+		top: 6px;
+		font-size: 9px;
+	}
+	#modules li{
+		margin: 10px 20px;
+		list-style: none;
+		color: #6d8fb0;
+	}
+	#apis{
+		padding: 0px;
+		margin: 0px;
+		margin-right: 230px;
+	}
+	#apis li{
+		list-style: none;
+	}
+	p{
+		margin: 10px 0px;
+	}
+
+	pre{
+		margin: 10px 0px;
+		line-height: 1.5em;
+		background: #EEEEEE;
+		border: 1px solid #E6E6E6;
+		color: #333;
+		padding: 10px;
+		font-size: 12px;
+	}
+
+	pre.ok{
+		background: #E7FDE3;
+	}
+
+	pre.error{
+		background: #F9DFDB;
+	}
+
+	p.api_meta{
+		font-size: 10px;
+	}
+
+	p.api_meta input{
+		font-size: 10px;
+		color: #999;
+		width: 120px;
+		height: 14px;
+		border: 1px solid #EFEFEF;
+	}
+	
+	h4 {
+		margin: 10px 0px;
+		font-size: 14px;
+	}
+	
+	table.params {
+		margin: 10px 0px;
+		padding: 0; 
+		border-collapse:collapse;
+	}
+	
+	table.params th{
+		font: bold 11px "Trebuchet MS", Verdana, Arial, Helvetica, sans-serif; 
+		color: #4f6b72; 
+		border-right: 1px solid #C1DAD7; 
+		border-bottom: 1px solid #C1DAD7; 
+		border-top: 1px solid #C1DAD7; 
+		letter-spacing: 2px; 
+		text-transform: uppercase; 
+		text-align: left; 
+		padding: 2px 6px 2px 6px; 
+		background: #CAE8EA  no-repeat; 
+	}
+	
+	table.params td {
+		border: 1px solid #C1DAD7; 
+		background: #fff; 
+		font-size:11px; 
+		padding: 4px 6px 4px 6px; 
+		color: #AAA; 
+	}
+	
+	table.params td.select_param{
+		cursor: pointer;
+	}
+	
+	table.params tr.selected td {
+		color: #4f6b72; 
+	}
+	
+	table.params td input {
+		font-size: 10px;
+		color: #EFEFEF;
+		width: 150px;
+		height: 16px;
+		border: 1px solid #EFEFEF;
+	}
+	
+	table.params td input.example_input{
+		width: 120px;
+	}
+	
+	table.params td .example_value{
+		padding: 4px 5px;
+		background: #1F3035;
+		color: #FFF;
+		font-weight: bold;
+		font-size: 12px;
+		cursor: pointer;
+	}
+	
+	table.params td .example_value:hover{
+		background: #CFEEEA;
+		color: #1F3035;
+	}
+	
+	table.params tr.selected td input{
+		color: #666;
+		border: 1px solid #ccc;
+	}
+	
+	.api_test a {
+		background: #EEE;
+		border: 1px solid #ccc;
+		padding: 0px 4px;
+		font-size: 13px;
+	}
+	.api_test a:hover {
+		background: #BBB;
+		color: #FFF;
+	}
+	.test_url {
+		font: 11px Verdana, Arial, Helvetica, sans-serif; 
+		margin-left: 5px;
+		color: #003163;
+	}
+	.menu {
+		position: absolute;
+		list-style-type: none;
+		margin: 0px;
+		padding: 0px;
+		border: 1px solid #008000;
+	}
+	.menu li{
+		list-style-type: none;
+		padding: 3px 10px;
+		font-size: 12px;
+		background: #fff;
+		cursor: pointer;
+	}
+	.menu li.hover{
+		background: #DBE8F3;
+	}
+	</style>
+	<script src="{{ static_url('jquery-1.4.4.min.js') }}"></script>
+	<script src="{{ static_url('ajaxfileupload.js') }}"></script>
+	<script>
+	jQuery(function($){
+		$.fn.extend({
+			apiHidden : function(){
+				$(this).each(function(){
+					$(this).find('.content').addClass('hidden');
+					$(this).find('h3 .hapi').removeClass('hidden');
+					$(this).find('h3 a.exp').text('+');
+				});
+			},
+			apiShow : function(){
+				$(this).each(function(){
+					$(this).find('.content').removeClass('hidden');
+					$(this).find('h3 .hapi').addClass('hidden');
+					$(this).find('h3 a.exp').text('-');
+				});
+			},
+			toggleHidden : function(){
+				$(this).each(function(){
+					$(this).find('.content').toggleClass('hidden');
+					$(this).find('h3 .hapi').toggleClass('hidden');
+					texp = $(this).find('h3 a.exp');
+					texp.text(texp.text() == '+' ? '-':'+');
+				});
+			}
+		})
+	
+		$('h3 a.exp, h3 a.api_name').click(function(){
+			$(this).parent().parent().toggleHidden();
+		});	
+		
+		$('td.select_param').click(function(){
+			$(this).parent().toggleClass('selected');
+			$(this).text($(this).text() == 'x' ? 'v':'x');
+		})
+		
+		window['testapi'] = function(api_id, method, uri, need_login, need_appkey){
+			id = '#api_result_' + api_id;
+			params_id = '#api_params_' + api_id;
+			testuser_id = '#api_testuser_' + api_id;
+			api = $('#api_' + api_id);
+			api.apiShow();
+		
+			data = {'json_indent': 'true'}
+			files = []
+			$(params_id).find('tr.selected input,tr.selected select').each(function(){
+				if($(this).attr('type') == 'file'){
+					files.push($(this));
+				}else if($(this).val() != ''){
+					data[$(this).attr('name')] = $(this).val();
+				}
+			});
+
+            var r1 = ":id";
+            var r2 = ":sid";
+
+            for(key in data){
+                if(uri.indexOf(r1)>-1 || uri.indexOf(r2)>-1){
+                    if(key.indexOf(r1)>-1){
+                        uri = uri.replace(r1,data[key]);
+                        uri = uri.replace(r2,data[key]);
+                        delete data[key];
+                    }
+                }
+            }
+
+			if(need_appkey){
+				data['app_key'] = api.find('.test_app_key').val();
+			}
+			if(need_login){
+				data['_test_user'] = $(testuser_id).val();
+			}
+			params = $.param(data);
+			req_str = method + ' ' + '{{api_base}}' + uri
+			if(params != ''){
+				req_str += '?' + params;
+			}
+			if(method == 'DELETE'){
+				uri = uri + '?' + params;
+				data = {};
+			}
+			api.find('.test_url').text(req_str);
+			$(id).html('Loading......');
+			$(id).show();
+			if(files.length == 0){
+				$.ajax({
+					type: method,
+					dataType: 'text',
+					url: '{{ api_base }}' + uri,
+					data: data,
+					beforeSend: function(req){
+						req.setRequestHeader('API_TEST', 'true');
+						if(need_login){
+							req.setRequestHeader('Test_User', $(testuser_id).val());
+						};
+					},
+					success: function (val, textStatus) {
+						var reg = /(http:\/\/|https:\/\/)((\w|=|\?|%|\.|\/|&|-)+)/g;
+						val = val.replace(reg, "<a target='_blank' href='$1$2'>$1$2</a>");
+						$(id).html(val);
+						$(id).removeClass('error');
+						$(id).addClass('ok');
+						$(id).show();
+					},
+					error: function (req, textStatus, errorThrown) {
+						$(id).html(req.responseText ? req.responseText : req.responseXML);
+						$(id).removeClass('ok');
+						$(id).addClass('error');
+						$(id).show();
+					}
+				});
+			} else {
+				data['_test_user'] = $(testuser_id).val();
+				$.ajaxFileUpload({
+					secureuri: false,
+					dataType: 'text',
+					url: '{{ api_base }}' + uri,
+					data: data,
+					files: files,
+					success: function (data, textStatus) {
+						if(data){
+							data = $(data).text();
+							try {
+								d =$.parseJSON(data);
+								if(d['msg']){
+									$(id).html(data);
+									$(id).removeClass('ok');
+									$(id).addClass('error');
+									$(id).show();
+									return;
+								}
+							} catch(e) {}
+						}
+						$(id).html(data);
+						$(id).removeClass('error');
+						$(id).addClass('ok');
+						$(id).show();
+					},
+					error: function (data, textStatus, e) {
+						$(id).html(data);
+						$(id).removeClass('ok');
+						$(id).addClass('error');
+						$(id).show();
+					}
+				})
+			}
+			return true;
+		};
+		
+		$('.params').find('tr input,tr select').change(function(){
+			tr = $(this).parent().parent();
+			if(!tr.hasClass('selected')){
+				tr.find('td.select_param').click();
+			}
+		});
+		
+		if(window.location.hash != ''){
+			$(window.location.hash).find('.api_name').click();
+		}
+		apis = $('#apis li.api');
+		if(apis.size() == 1){
+			apis.find('.api_name').click();
+		}
+		$('#modules a').click(function(){
+			$('#apis .module').removeClass('highlight');
+			$($(this).attr('href')).addClass('highlight');
+			return true;
+		})
+		$('.appkey_holder').click(function(){
+			old_key = $(this).attr('key');
+			holder = $(this);
+			holder.html('loading...');
+			$.getJSON('/wiapi/doc/apps', function(data){
+				var s = $('<select class="test_app_key"></select>');
+				for(k in data){
+					s.append('<option value="'+ k +'">'+ data[k] +'</option>');
+				}
+				s.val(old_key);
+				holder.replaceWith(s);
+			});
+		});
+		$('#test_app_selected').change(function(){
+			window.location = '?test_app_key=' + $(this).val();
+		});
+		$('.example_value').click(function(){
+			input = $(this).parent().find('input.example_input')
+			api = input.closest('.api');
+			$.ajax({
+				method: 'GET',
+				data: {'id': $(this).attr('val'), 'app_key': api.find('.test_app_key').val(), '_test_user': api.find('.test_user').val()},
+				url: '/wiapi/doc/example',
+				beforeSend: function(req){
+					input.val('loading...');
+				},
+				success: function (data, textStatus) {
+					if(data.substr(0,1) == '['){
+						data = $.parseJSON(data).join(',');
+					}else if(data.substr(0,1) == '{'){
+						datas = $.parseJSON(data);
+						menu = $('<ul class="menu"></ul>');
+						for(k in datas){
+							li = $('<li val="'+ k +'">'+ datas[k] +'</li>');
+							menu.append(li);
+							li.hover(function(){$(this).toggleClass('hover')});
+							li.click(function(){
+								input.val($(this).attr('val'));
+								$(this).parent().remove();
+							});
+						}
+						menu.css({'top':(input.position().top + 20) + 'px', 'left':input.position().left + 'px'});
+						$('body').append(menu);
+						data = 'Select...';
+					}
+					input.val(data);
+				},
+				error: function (req, textStatus, errorThrown) {
+					input.val('error');
+				}
+			});
+		})
+	});
+	</script>
+</head>
+
+<body>
+	<div id="content">
+		<h1><a href="doc">{{_('微云API文档')}}</a> <a href="map">MAP</a></h1>
+		<h2><b>API base path</b> : {{ api_base }} <b>Test App</b> : <a class="appkey_holder" key="{{test_app_key}}">{{test_app.name}}</a></h2>
+		<ul id='modules'>
+			<li><a href="map">API MAP</a></li>
+		{% for module in apis.keys() %}
+			<li><a href="#module_{{module.replace('.','_')}}">{{ module }}</a></li>
+		{% end %}
+		</ul>
+		<ul id='apis'>
+		{% for (module, apilist) in apis.items() %}
+			<li class="module" id="module_{{module.replace('.','_')}}"><a href="?module={{ module }}">{{ module }}</a></li>
+			{% for api in apilist %}
+				<li class="api" id="api_{{api.id}}"><h3>
+					<a class="api_name" style='cursor:pointer;'>{{ api.name }}</a>
+
+					<span class="hapi"><span class='api_method'>{{ api.method }}</span> <span class='api_uri'>{{ escape(api.uri)}}</span></span>
+                    
+					 <a class="exp">+</a>
+					 <a class="elink" href="?name={{ api.name.replace(' ', '_') }}">~</a>
+					</h3>
+					<div class="content hidden">
+					<p class='desc'>{{ api.description }}</p>
+					<p class='api'><span class='api_method'>{{ api.method }}</span> <span class='api_uri'>{{ escape(api.uri) }}</span></p>
+					{%if api.params%}
+					<h4>Params</h4>
+					<table id="api_params_{{ api.id }}" class="params">
+						<thead><th></th><th>Name</th><th>Required</th><th>Type</th><th>Default</th><th>Example</th><th>Description</th></thead>
+					{% for p in api.params %}
+						<tr class="{%if p.required %}required selected{%end%}">
+							<td class="select_param">{%if not p.required %}x{%end%}</td>
+							<td><b>{{ p.name }}</b></td><td>{{ p.required }}</td><td>{{ p.display_type() }}</td><td>{{ p.default or 'N/A' }}</td>
+							<td>{%if p.hidden%}{{p.display_example()}}{%else%}{{ p.html_example() }}{%end%}</td><td>{{ p.description }}</td>
+						</tr>
+					{% end %}
+					</table>
+					{%else%}
+					<h4>No Params</h4>
+					{% end %}
+					<p class='api_test'><a onclick='testapi("{{ api.id }}", "{{ api.method }}", "{{ api.uri }}", {% if api.need_login %}true{% else %}false{% end %}, {% if api.need_appkey %}true{% else %}false{% end %});'>Test API</a>
+							<span class="test_url"></span></p>
+					{% if api.need_login %}
+					<p class='api_meta'>{{_('需要用户登录, 测试用户: ')}}<input class="test_user" type='text' id="api_testuser_{{ api.id }}" value="{{ test_user_name }}"></p>
+					{% end %}
+					{% if api.need_appkey %}
+					<p class='api_meta'>需要App Key, {% if test_app %}测试应用 : 
+						<a class="appkey_holder" key="{{test_app_key}}">{{ test_app.name }}<input type="hidden" class="test_app_key" value="{{ test_app_key }}"/></a>{% end %}</p>
+					{% end %}
+					<pre id="api_result_{{ api.id }}" class="brush: js;">{{ api.result }}</pre>
+					</div>
+				</li>
+			{% end %}
+		{% end %}
+		</ul>
+		<div class="clear"></div>
+	</div>
+</body>
+</html>
