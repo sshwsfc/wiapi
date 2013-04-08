@@ -4,6 +4,8 @@ import datetime
 import functools
 import json
 import logging
+import traceback
+import StringIO
 from UserDict import UserDict
 
 import tornado.locale
@@ -304,8 +306,6 @@ class BaseHandler(tornado.web.RequestHandler):
         pass
 
     def log_exception(self, type=None, value=None, tb=None):
-        import traceback
-        import StringIO
 
         exce_info = StringIO.StringIO()
         exc_info = True
@@ -320,20 +320,6 @@ class BaseHandler(tornado.web.RequestHandler):
 
         logging.error(error_info, exc_info=exc_info)
         self.mail_admins('API ERROR: %s' % str(value), "[%s] %s" % (datetime.datetime.now(), error_info))
-
-
-    def _stack_context_handle_exception(self, type, value, tb):
-        _bundle = getattr(self, "_bundle", None)
-        if _bundle:
-            return
-
-        if isinstance(value, HTTPError):
-            self._handle_request_exception(value)
-        else:
-            self.log_exception(type, value, tb)
-            self.send_error(500, exception=value)
-
-        return True
 
 class ApiHandler(BaseHandler):
 
@@ -512,29 +498,17 @@ class ApiHandler(BaseHandler):
                 self._api_meta = None
         return self._api_meta
 
-    def send_error(self, status_code=403, **kwargs):
-        _bundle = getattr(self, "_bundle", None)
+    def send_error(self, status_code=500, **kwargs):
+        if 'msg' in kwargs and 'exc_info' not in kwargs:
+            raise HTTPError(status_code, kwargs['msg'])
+        else:
+            super(ApiHandler, self).send_error(status_code, **kwargs)
 
-        if _bundle:
-            log_message = kwargs.get('msg') or kwargs.get('exception')
-            raise HTTPError(status_code, log_message=log_message)
-
-        if self._headers_written:
-            logging.error("Cannot send error response after headers written")
-            if not self._finished:
-                self.finish()
-            return
-        self.clear()
-        self.set_status(status_code)
-
-        if status_code < 500:
-            if kwargs.has_key('exception') and not kwargs.has_key('msg'):
-                kwargs['msg'] = str(kwargs['exception'])
-                del kwargs['exception']
-            self.write(kwargs)
-
-        if not self._finished and not _bundle:
-            self.finish()
+    def write_error(self, status_code, **kwargs):
+        result = {"code": status_code, "msg": self._reason}
+        if self.settings.get("debug") and "exc_info" in kwargs:
+            result['exc_info'] = ''.join(traceback.format_exception(*kwargs["exc_info"]))
+        self.write(result)
 
     def write(self, chunk):
         _bundle = getattr(self, "_bundle", None)
