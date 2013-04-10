@@ -405,6 +405,9 @@ class ApiHandler(BaseHandler):
         else:
             return default
 
+    def arg_dict(self):
+        return dict([(k, self.arg(k)) for k in self.request.arguments.keys()])
+
     def static_media_url(self, url):
         return self.settings.get('static_url', '') + (url[0] == '/' and url[1:] or url)
 
