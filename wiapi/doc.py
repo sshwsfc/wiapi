@@ -1,4 +1,4 @@
-from django.utils import simplejson
+import json
 from wiapi import *
 
 class ApiDocHandler(BaseHandler):
@@ -34,7 +34,7 @@ class ApiMapHandler(BaseHandler):
 class ApiAppKeyHandler(BaseHandler):
     def get(self):
         app_keys = {}
-        self.write(simplejson.dumps(app_keys))
+        self.write(json.dumps(app_keys))
 
 
 class ApiExampleHandler(ApiHandler):
@@ -53,7 +53,7 @@ class ApiExampleHandler(ApiHandler):
             v = data
         if type(v) in (list, tuple, dict):
             if v:
-                self.write(simplejson.dumps(v))
+                self.write(json.dumps(v))
             else:
                 self.write('null')
         else:
